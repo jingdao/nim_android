@@ -44,6 +44,8 @@ public class NIMActivity extends Activity implements View.OnTouchListener
 	boolean playerTurn = true;
 	boolean useAI;
 	int ai_heap=0, ai_stones=1;
+	ArrayList<Integer> human_moves = new ArrayList<Integer>();
+	ArrayList<Integer> ai_moves = new ArrayList<Integer>();
 	private Handler handler = new Handler();
 	private Runnable runnable;
 	int blinkDuration = 300;
@@ -101,8 +103,8 @@ public class NIMActivity extends Activity implements View.OnTouchListener
 					blinkPeriod = 0;
 					stones_per_heap[ai_heap] -= ai_stones;
 					drawStones();
-					if (!checkGameOver())
-						playerTurn = true;
+					checkGameOver();
+					playerTurn = true;
 				} else {
 					for (int j=0;j<ai_stones;j++) {
 						ImageView iv = tmpViews[ai_heap].get(j);
@@ -257,6 +259,8 @@ public class NIMActivity extends Activity implements View.OnTouchListener
 				}
 			}
 		}
+		ai_moves.add(ai_heap);
+		ai_moves.add(ai_stones);
 		handler.postDelayed(runnable, blinkDuration);
 	}
 
@@ -307,13 +311,15 @@ public class NIMActivity extends Activity implements View.OnTouchListener
 						numExtracted++;
 				if (numExtracted > 0) {
 					stones_per_heap[selectedHeap] -= numExtracted;
+					human_moves.add(selectedHeap);
+					human_moves.add(numExtracted);
 					drawStones();
+					if (!checkGameOver() && useAI) {
+						playerTurn = false;
+						getAIMove();
+					}
 				}
 				selectedHeap = -1;
-				if (!checkGameOver() && useAI) {
-					playerTurn = false;
-					getAIMove();
-				}
 			}
 		}
 		return true;
@@ -328,6 +334,19 @@ public class NIMActivity extends Activity implements View.OnTouchListener
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 			case R.id.undomenu:
+				if (!playerTurn)
+					return false;
+				if (ai_moves.size() > 0) {
+					int numStones = ai_moves.remove(ai_moves.size() - 1);
+					int heapID = ai_moves.remove(ai_moves.size() - 1);
+					stones_per_heap[heapID] += numStones;
+				}
+				if (human_moves.size() > 0) {
+					int numStones = human_moves.remove(human_moves.size() - 1);
+					int heapID = human_moves.remove(human_moves.size() - 1);
+					stones_per_heap[heapID] += numStones;
+				}
+				drawStones();
 				return true;
 			case R.id.newgamemenu:
 				Intent intent = getIntent();
